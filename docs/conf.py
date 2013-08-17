@@ -12,17 +12,12 @@
 # serve to show the default.
 
 import sys, os
+import dtcwt
 
-from six.moves import configparser
-
-# Load this project's setup.cfg
-setup_cfg = configparser.ConfigParser()
-setup_cfg.read(os.path.join(os.path.dirname(__file__), '..', 'setup.cfg'))
-
-# Load some data from setup.cfg
-project = setup_cfg.get('metadata', 'name')
-version = setup_cfg.get('metadata', 'version')
-release = setup_cfg.get('metadata', 'version')
+# Information on the project
+project = 'dtcwt'
+version = dtcwt.__version__
+release = version
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the

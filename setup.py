@@ -8,9 +8,11 @@ from setuptools import setup, find_packages
 def read(fname):
     return open(os.path.join(os.path.dirname(__file__), fname)).read()
 
+import dtcwt
+
 setup(
     name = 'dtcwt',
-    version = '0.6dev1',
+    version = dtcwt.__version__,
     author = "Rich Wareham",
     author_email = "rich.dtcwt@richwareham.com",
     description = ("A port of the Dual-Tree Complex Wavelet Transform MATLAB toolbox."),
