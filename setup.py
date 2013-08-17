@@ -31,7 +31,10 @@ setup(
         'dtcwt': ['data/*.npz',],
     },
 
-    setup_requires=[ 'nose>=1.0', ],
+    # numpy and six are requirements to be able to successfully import the main
+    # dtcwt package. Requirements for other sub-modules within dtcwt should be
+    # listed in install_requires.
+    setup_requires=[ 'nose>=1.0', 'numpy', 'six' ],
 
     install_requires=[ 'numpy', 'six', ],
 
