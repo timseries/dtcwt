@@ -3,13 +3,15 @@ from nose.tools import raises
 from nose.plugins.attrib import attr
 
 import numpy as np
-from dtcwt import dtwavexfm2, dtwaveifm2, biort, qshift
+from dtcwt.compat import dtwavexfm2, dtwaveifm2
+from dtcwt.coeffs import biort, qshift
+import tests.datasets as datasets
 
 TOLERANCE = 1e-12
 
 def setup():
     global lena, lena_crop
-    lena = np.load(os.path.join(os.path.dirname(__file__), 'lena.npz'))['lena'].astype(np.float64)
+    lena = datasets.lena().astype(np.float64)
     lena_crop = lena[:233, :301]
 
 def test_lena_loaded():

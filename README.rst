@@ -8,6 +8,22 @@ transforms and their inverse in Python.
 .. image:: https://travis-ci.org/rjw57/dtcwt.png?branch=master
     :target: https://travis-ci.org/rjw57/dtcwt
 
+.. image:: https://coveralls.io/repos/rjw57/dtcwt/badge.png?branch=master
+    :target: https://coveralls.io/r/rjw57/dtcwt?branch=master
+    :alt: Coverage
+
+.. image:: https://pypip.in/license/dtcwt/badge.png
+    :target: https://pypi.python.org/pypi/dtcwt/
+    :alt: License
+
+.. image:: https://pypip.in/v/dtcwt/badge.png
+    :target: https://pypi.python.org/pypi/dtcwt/
+    :alt: Latest Version
+
+.. image:: https://pypip.in/d/dtcwt/badge.png
+    :target: https://pypi.python.org/pypi//dtcwt/
+    :alt: Downloads
+
 Installation
 ````````````
 
@@ -52,11 +68,29 @@ MATLAB toolbox.
 Changes
 ```````
 
+0.10.0
+''''''
+
+0.9.0
+'''''
+
+* MATLAB-style functions such as ``dtwavexfm2`` have been moved into a separate
+  ``dtcwt.compat`` module.
+* Backends moved to ``dtcwt.numpy`` and ``dtcwt.opencl`` modules.
+* Removed ``dtcwt.base.ReconstructedSignal`` which was a needless wrapper
+  around NumPy arrays.
+* Rename ``TransformDomainSignal`` to ``Pyramid``.
+* Allow runtime configuration of default backend via ``dtcwt.push_backend`` function.
+* Verified, thanks to @timseries, the NumPy 3D transform implementation against
+  the MATLAB reference implementation.
+
 0.8.0
 '''''
 
 * Verified the highpass re-sampling routines in ``dtcwt.sampling`` against the
   existing MATLAB implementation.
+* Added experimental image registration routines.
+* Re-organised documentation.
 
 0.7.2
 '''''

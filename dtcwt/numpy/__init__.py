@@ -4,11 +4,14 @@ be available.
 
 """
 
-from .transform2d import TransformDomainSignal, Transform2d
+from .common import Pyramid
+from .transform1d import Transform1d
+from .transform2d import Transform2d
 from .transform3d import Transform3d
 
 __all__ = [
-    'TransformDomainSignal',
+    'Pyramid',
+    'Transform1d',
     'Transform2d',
     'Transform3d',
 ]

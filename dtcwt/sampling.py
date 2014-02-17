@@ -1,5 +1,5 @@
 """This module contains function for rescaling and re-sampling high- and
-low-pass subbands.
+low-pass highpasses.
 
 .. note::
 
@@ -11,6 +11,8 @@ low-pass subbands.
     in this module will use this region as the extent of the image.
 
 """
+
+from __future__ import absolute_import
 
 __all__ = (
     'sample', 'sample_highpass',

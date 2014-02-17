@@ -3,18 +3,19 @@ from nose.tools import raises
 from nose.plugins.attrib import attr
 
 import numpy as np
-from dtcwt import biort, qshift
-from dtcwt import dtwavexfm2 as dtwavexfm2_np, dtwaveifm2
-from dtcwt.backend.backend_opencl.transform2d import dtwavexfm2 as dtwavexfm2_cl
+from dtcwt.coeffs import biort, qshift
+from dtcwt.compat import dtwavexfm2 as dtwavexfm2_np, dtwaveifm2
+from dtcwt.opencl.transform2d import dtwavexfm2 as dtwavexfm2_cl
 
 from .util import assert_almost_equal, skip_if_no_cl
+import tests.datasets as datasets
 
 TOLERANCE = 1e-12
 GOLD_TOLERANCE = 1e-5
 
 def setup():
     global lena
-    lena = np.load(os.path.join(os.path.dirname(__file__), 'lena.npz'))['lena']
+    lena = datasets.lena()
 
 def test_lena_loaded():
     assert lena.shape == (512, 512)

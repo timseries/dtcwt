@@ -4,7 +4,16 @@
 %%
 %% Run with something like:
 %%
-%% $ MATLABPATH=/path/to/dtcwt_toolbox4_3 /path/to/matlab -nosplash -nodesktop -r "run /path/to/gen_verif; quit"
+%% $ /path/to/matlab -nosplash -nodesktop -r "run /path/to/gen_verif; quit"
+%%
+%% There should be the DTCWT toolboxes installed in a toolboxes directory next
+%% to the script. See the regen_verification.sh script for an example of setting
+%% this up.
+
+% Add the qbgn and toolbox files to the path
+strFilePath=[fileparts(which(mfilename('fullpath'))) '/'];
+addpath([strFilePath 'qbgn/']);
+addpath(genpath([strFilePath 'toolboxes/']));
 
 %% Load Lena image
 inputs = load('lena.mat');
@@ -30,7 +39,7 @@ qshift_b_bp = load('qshift_b_bp');
 
 [lena_Ylb, lena_Yhb, lena_Yscaleb] = dtwavexfm2b(lena, 4, 'near_sym_b_bp', 'qshift_b_bp');
 
-%% 3x interpolation of subbands
+%% 3x interpolation of highpasses
 x = lena_Yh{3};
 sx = size(x);
 nx = sx(2)*3; ny = sx(1)*3;
@@ -47,8 +56,6 @@ for sb=1:6
 end
 
 %% Generate quantized bandlimited gaussian noise (gbgn) phantom
-strFilePath=[fileparts(which(mfilename('fullpath'))) '/'];
-addpath([strFilePath 'qbgn/']);
 %generate quantized band-limited gaussian noise, and case to 8-bit to save space
 qbgn = uint8(gen_qbgn(128,128));
 %take the 3D wavelet transform, which defaults to near_sym_a (5,7) and qshift_b (14 taps)
@@ -56,7 +63,7 @@ qbgn = uint8(gen_qbgn(128,128));
 %now re-arrange the coefficients to form complex-valued high-pass subbands instead of alternating real/imag parts
 qbgn_Yh = ri2c(qbgn_Yh);
 
-save('../tests/qbgn.mat','qbgn');
+save('qbgn.mat','qbgn');
 
 save('verification.mat', 'lena_coldfilt', 'lena_colifilt', 'lena_Yl', 'lena_Yh', 'lena_Yscale', ...
      'lena_Ylb', 'lena_Yhb', 'lena_Yscaleb', 'lena_upsample', 'qbgn_Yl', 'qbgn_Yh', 'qbgn_Yscale');

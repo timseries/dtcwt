@@ -10,7 +10,7 @@ def read(fname):
 
 setup(
     name = 'dtcwt',
-    version = '0.8dev1',
+    version = '0.10.0dev1',
     author = "Rich Wareham",
     author_email = "rich.dtcwt@richwareham.com",
     description = ("A port of the Dual-Tree Complex Wavelet Transform MATLAB toolbox."),
@@ -34,7 +34,7 @@ setup(
     install_requires=[ 'numpy', 'six', ],
 
     extras_require={
-        'docs': [ 'sphinx', 'docutils', ],
+        'docs': [ 'sphinx', 'docutils', 'matplotlib', 'ipython', ],
         'opencl': [ 'pyopencl', ],
     },
 

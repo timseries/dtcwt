@@ -3,7 +3,8 @@ from nose.tools import raises
 from nose.plugins.attrib import attr
 
 import numpy as np
-from dtcwt import dtwavexfm3, dtwaveifm3, biort, qshift
+from dtcwt.compat import dtwavexfm3, dtwaveifm3
+from dtcwt.coeffs import biort, qshift
 
 GRID_SIZE=32
 SPHERE_RAD=0.4 * GRID_SIZE
@@ -160,7 +161,7 @@ def test_level_4_recon_discarding_level_1():
     assert np.median(np.abs(ellipsoid - ellipsoid_recon)[:]) < 1e-3
 
 def test_level_4_discarding_level_1():
-    # Test that level >= 2 subbands are identical
+    # Test that level >= 2 highpasses are identical
     Yl1, Yh1 = dtwavexfm3(ellipsoid, 4, discard_level_1=True)
     Yl2, Yh2 = dtwavexfm3(ellipsoid, 4, discard_level_1=False)
 

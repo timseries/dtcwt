@@ -2,7 +2,9 @@ import functools
 import numpy as np
 
 from nose import SkipTest
-from dtcwt.backend.backend_opencl.lowlevel import NoCLPresentError
+from dtcwt.opencl.lowlevel import NoCLPresentError
+
+from six.moves import xrange
 
 TOLERANCE = 1e-6
 

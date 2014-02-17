@@ -4,15 +4,14 @@ from nose.plugins.attrib import attr
 
 import numpy as np
 
-from scipy.io import loadmat
-from dtcwt import dtwavexfm2, dtwavexfm3, dtwaveifm2, dtwavexfm2b, dtwaveifm2b, biort, qshift
-from dtcwt.lowlevel import coldfilt, colifilt
+from dtcwt.compat import dtwavexfm2, dtwaveifm2, dtwavexfm2b, dtwaveifm2b
+from dtcwt.coeffs import biort, qshift
+from dtcwt.numpy.lowlevel import coldfilt, colifilt
+from dtcwt.numpy import Transform3d, Pyramid
 from dtcwt.sampling import rescale_highpass
 
-from dtcwt.backend.base import TransformDomainSignal, ReconstructedSignal
-from dtcwt.backend.backend_numpy import Transform3d
-
 from .util import assert_almost_equal, summarise_mat, summarise_cube, assert_percentile_almost_equal
+import tests.datasets as datasets
 
 ## IMPORTANT NOTE ##
 
@@ -54,10 +53,10 @@ def assert_percentile_almost_equal_to_summary_cube(a, summary, *args, **kwargs):
 
 def setup():
     global lena
-    lena = np.load(os.path.join(os.path.dirname(__file__), 'lena.npz'))['lena']
+    lena = datasets.lena()
 
     global qbgn
-    qbgn = loadmat(os.path.join(os.path.dirname(__file__), 'qbgn.mat'))['qbgn']
+    qbgn = np.load(os.path.join(os.path.dirname(__file__), 'qbgn.npz'))['qbgn']
 
     global verif
     verif = np.load(os.path.join(os.path.dirname(__file__), 'verification.npz'))
@@ -118,7 +117,7 @@ def test_rescale_highpass():
 def test_transform3d_numpy():
     transform = Transform3d(biort='near_sym_b',qshift='qshift_b')
     td_signal = transform.forward(qbgn, nlevels=3, include_scale=True, discard_level_1=False)
-    Yl, Yh, Yscale = td_signal.lowpass, td_signal.subbands, td_signal.scales
+    Yl, Yh, Yscale = td_signal.lowpass, td_signal.highpasses, td_signal.scales
     assert_almost_equal_to_summary_cube(Yl, verif['qbgn_Yl'], tolerance=TOLERANCE)
     for idx, a in enumerate(Yh):
         assert_almost_equal_to_summary_cube(a, verif['qbgn_Yh_{0}'.format(idx)], tolerance=TOLERANCE)
