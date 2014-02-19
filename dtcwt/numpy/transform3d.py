@@ -10,8 +10,6 @@ from dtcwt.utils import appropriate_complex_type_for, asfarray
 
 from dtcwt.numpy.lowlevel import *
 
-import pdb
-
 class Transform3d(object):
     """
     An implementation of the 3D DT-CWT via NumPy. *biort* and *qshift* are the
@@ -19,7 +17,13 @@ class Transform3d(object):
     :py:func:`dtcwt.coeffs.biort` and :py:func:`dtcwt.coeffs.qshift`.
 
     """
-    def __init__(self, biort=DEFAULT_BIORT, qshift=DEFAULT_QSHIFT, ext_mode=4):
+    def __init__(self, biort=DEFAULT_BIORT, qshift=DEFAULT_QSHIFT, ext_mode=4, discard_level_1=False):
+        """
+        Constructor fot the 3D DT-CWT transform class (NumPy).
+        :param biort: Level 1 wavelets to use. See :py:func:`dtcwt.coeffs.biort`.
+        :param qshift: Level >= 2 wavelets to use. See :py:func:`dtcwt.coeffs.qshift`.
+        :param discard_level_1: True if level 1 high-pass bands are to be discarded.
+        """
         # Load bi-orthogonal wavelets
         try:
             self.biort = _biort(biort)
@@ -33,15 +37,13 @@ class Transform3d(object):
             self.qshift = qshift
 
         self.ext_mode = ext_mode
+        self.discard_level_1 = discard_level_1
 
-    def forward(self, X, nlevels=3, include_scale=False, discard_level_1=False):
+    def forward(self, X, nlevels=3, include_scale=False):
         """Perform a *n*-level DTCWT-3D decompostion on a 3D matrix *X*.
 
         :param X: 3D real array-like object
         :param nlevels: Number of levels of wavelet decomposition
-        :param biort: Level 1 wavelets to use. See :py:func:`dtcwt.coeffs.biort`.
-        :param qshift: Level >= 2 wavelets to use. See :py:func:`dtcwt.coeffs.qshift`.
-        :param discard_level_1: True if level 1 high-pass bands are to be discarded.
 
         :returns: a :py:class:`dtcwt.Pyramid` instance
 
@@ -111,33 +113,30 @@ class Transform3d(object):
             # this is only required if the user specifies a third output component.
             Yscale = [None,] * nlevels
 
-        #pdb.set_trace()
         # level is 0-indexed
         for level in xrange(nlevels):
             # Transform
-            if level == 0 and discard_level_1:
+            if level == 0 and self.discard_level_1:
                 Yl = _level1_xfm_no_highpass(Yl, h0o, h1o, self.ext_mode)
-            elif level == 0 and not discard_level_1:
+            elif level == 0 and not self.discard_level_1:
                 Yl, Yh[level] = _level1_xfm(Yl, h0o, h1o, self.ext_mode)
             else:
                 Yl, Yh[level] = _level2_xfm(Yl, h0a, h0b, h1a, h1b, self.ext_mode)
             if include_scale:
                 Yscale[level] = Yl.copy()
 
-                #Yh[nlevels+1]=1 #to throw an error for debugging in nose
         if include_scale:
             return Pyramid(Yl, tuple(Yh), tuple(Yscale))
         else:
             return Pyramid(Yl, tuple(Yh))
 
-    def inverse(self, pyramid):
+    def inverse(self, pyramid, gain_mask=None):
         """Perform an *n*-level dual-tree complex wavelet (DTCWT) 3D
         reconstruction.
 
         :param pyramid: The :py:class:`dtcwt.Pyramid`-like instance representing the transformed signal.
-        :param biort: Level 1 wavelets to use. See :py:func:`biort`.
-        :param qshift: Level >= 2 wavelets to use. See :py:func:`qshift`.
-        :param ext_mode: Extension mode. See below.
+        :param pyramid: The :py:class:`dtcwt.Pyramid`-like instance representing the transformed signal.
+        :param gain_mask: Gain to be applied to each subband. Currently not implemented.
 
         :returns: Reconstructed real image matrix.
 
@@ -271,8 +270,6 @@ def _level1_xfm(X, h0o, h1o, ext_mode):
         # Do odd top-level filters on columns.
         work[s0a, :, f] = colfilter(y2, h0o)
         work[s0b, :, f] = colfilter(y2, h1o)
-        #if f==2:
-        #work[:,:,work.shape[2]+1]=1 #to throw an error so we can inspect y in the unit test
 
     # Return appropriate slices of output
     return (
@@ -567,7 +564,6 @@ def cube2c(y):
     r = ( A+G+D-F) * j2[0] + ( B+H-C+E) * j2[1]
     s = ( A+G-D+F) * j2[0] + (-B-H-C+E) * j2[1]
 
-    #j2[2]=1 #to throw an error
     # Form the 2 subbands in z.
     z = np.concatenate((
         p[:,:,:,np.newaxis],
