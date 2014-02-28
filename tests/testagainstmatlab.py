@@ -67,7 +67,7 @@ def test_lena_loaded():
     assert lena.max() <= 1
     assert lena.dtype == np.float32
 
-def test_lena_loaded():
+def test_verif_loaded():
     assert verif is not None
     assert 'lena_coldfilt' in verif
 
