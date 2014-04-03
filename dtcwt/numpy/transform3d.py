@@ -19,7 +19,7 @@ class Transform3d(object):
     """
     def __init__(self, biort=DEFAULT_BIORT, qshift=DEFAULT_QSHIFT, ext_mode=4, discard_level_1=False):
         """
-        Constructor fot the 3D DT-CWT transform class (NumPy).
+        Constructor for the 3D DT-CWT transform class (NumPy).
         :param biort: Level 1 wavelets to use. See :py:func:`dtcwt.coeffs.biort`.
         :param qshift: Level >= 2 wavelets to use. See :py:func:`dtcwt.coeffs.qshift`.
         :param discard_level_1: True if level 1 high-pass bands are to be discarded.
