@@ -20,6 +20,70 @@ except ImportError:
     # The lack of OpenCL will be caught by the low-level routines.
     pass
 
+def dtwavexfm3(X, nlevels=3, biort=DEFAULT_BIORT, qshift=DEFAULT_QSHIFT, include_scale=False, queue=None):
+    t = Transform3d(biort=biort, qshift=qshift, queue=queue)
+    r = t.forward(X, nlevels=nlevels, include_scale=include_scale)
+    if include_scale:
+        return r.lowpass, r.highpasses, r.scales
+    else:
+        return r.lowpass, r.highpasses
+
+class Pyramid(object):
+    """
+    An interface-compatible version of
+    :py:class:`dtcwt.Pyramid` where the initialiser
+    arguments are assumed to by :py:class:`pyopencl.array.Array` instances.
+
+    The attributes defined in :py:class:`dtcwt.Pyramid`
+    are implemented via properties. The original OpenCL arrays may be accessed
+    via the ``cl_...`` attributes.
+
+    .. note::
+    
+        The copy from device to host is performed *once* and then memoized.
+        This makes repeated access to the host-side attributes efficient but
+        will mean that any changes to the device-side arrays will not be
+        reflected in the host-side attributes after their first access. You
+        should not be modifying the arrays once you return an instance of this
+        class anyway but if you do, beware!
+
+    .. py:attribute:: cl_lowpass
+
+        The CL array containing the lowpass image.
+
+    .. py:attribute:: cl_highpasses
+
+        A tuple of CL arrays containing the subband images.
+
+    .. py:attribute:: cl_scales
+
+        *(optional)* Either ``None`` or a tuple of lowpass images for each
+        scale.
+
+    """
+    def __init__(self, lowpass, highpasses, scales=None):
+        self.cl_lowpass = lowpass
+        self.cl_highpasses = highpasses
+        self.cl_scales = scales
+
+    @property
+    def lowpass(self):
+        if not hasattr(self, '_lowpass'):
+            self._lowpass = to_array(self.cl_lowpass) if self.cl_lowpass is not None else None
+        return self._lowpass
+
+    @property
+    def highpasses(self):
+        if not hasattr(self, '_highpasses'):
+            self._highpasses = tuple(to_array(x) for x in self.cl_highpasses) if self.cl_highpasses is not None else None
+        return self._highpasses
+
+    @property
+    def scales(self):
+        if not hasattr(self, '_scales'):
+            self._scales = tuple(to_array(x) for x in self.cl_scales) if self.cl_scales is not None else None
+        return self._scales
+        
 class Transform3d(Transform3dNumPy):
     """
     An implementation of the 3D DT-CWT via OpenCL. *biort* and *qshift* are the
@@ -37,11 +101,11 @@ class Transform3d(Transform3dNumPy):
         inverse transform uses the NumPy backend.
 
     """
-    def __init__(self, biort=DEFAULT_BIORT, qshift=DEFAULT_QSHIFT,ext_mode=4, queue=None):
-        super(Transform3d, self).__init__(biort=biort, qshift=qshift, ext_mode=ext_mode)
+    def __init__(self, biort=DEFAULT_BIORT, qshift=DEFAULT_QSHIFT,ext_mode=4, discard_level_1=False, queue=None):
+        super(Transform3d, self).__init__(biort=biort, qshift=qshift, ext_mode=ext_mode, discard_level_1=discard_level_1)
         self.queue = to_queue(queue)
 
-    def forward(self, X, nlevels=3, include_scale=False, discard_level_1=False):
+    def forward(self, X, nlevels=3, include_scale=False):
         """Perform a *n*-level DTCWT-3D decompostion on a 3D matrix *X*.
 
         :param X: 3D real array-like object
@@ -51,11 +115,10 @@ class Transform3d(Transform3dNumPy):
         :param ext_mode: Extension mode. See below.
         :param include_scale: True if level 1 high-pass bands are to be discarded.
 
-        :returns Yl: The real lowpass image from the final level
-        :returns Yh: A tuple containing the complex highpass subimages for each level.
-
+        :returns: A :py:class:`dtcwt.Pyramid` compatible object representing the transform-domain signal
+        
         Each element of *Yh* is a 4D complex array with the 4th dimension having
-        size 28. The 3D slice ``Yh[l][:,:,:,d]`` corresponds to the complex higpass
+        size 28. The 3D slice ``Yh[l][:,:,:k,d]`` corresponds to the complex higpass
         coefficients for direction d at level l where d and l are both 0-indexed.
 
         If *biort* or *qshift* are strings, they are used as an argument to the
@@ -85,7 +148,14 @@ class Transform3d(Transform3dNumPy):
         .. codeauthor:: Nick Kingsbury, Cambridge University, July 1999.
 
         """
-        X = np.atleast_3d(asfarray(X))
+        queue = self.queue
+
+        if isinstance(X, CLArray):
+            if len(X.shape) != 2:
+                raise ValueError('Input array must be two-dimensional')
+        else:
+            # If not a CL array, copy to device
+            X = np.atleast_3d(asfarray(X))
 
         if len(self.biort) == 4:
             h0o, g0o, h1o, g1o = self.biort
@@ -104,6 +174,8 @@ class Transform3d(Transform3dNumPy):
         # Check value of ext_mode. TODO: this should really be an enum :S
         if self.ext_mode != 4 and self.ext_mode != 8:
             raise ValueError('ext_mode must be one of 4 or 8')
+        
+        original_size = X.shape
 
         Yl = X
         Yh = [None,] * nlevels
@@ -115,18 +187,14 @@ class Transform3d(Transform3dNumPy):
         # level is 0-indexed
         for level in xrange(nlevels):
             # Transform
-            if level == 0 and discard_level_1:
+            if level == 0 and self.discard_level_1:
                 Yl = _level1_xfm_no_highpass(Yl, h0o, h1o, self.ext_mode)
-                if include_scale:
-                    Yscale[0] = Yl
-            elif level == 0 and not discard_level_1:
+            elif level == 0 and not self.discard_level_1:
                 Yl, Yh[level] = _level1_xfm(Yl, h0o, h1o, self.ext_mode)
-                if include_scale:
-                    Yscale[0] = Yl
             else:
                 Yl, Yh[level] = _level2_xfm(Yl, h0a, h0b, h1a, h1b, self.ext_mode)
                 if include_scale:
-                    Yscale[level] = Yl
+                    Yscale[level] = Yl.copy()
         #FIXME: need some way to separate the Yscale component to include the scale when necessary.
         if include_scale:
             return Pyramid(Yl, tuple(Yh), tuple(Yscale))
